@@ -219,16 +219,52 @@ if __name__ == "__main__":
     depth = df[depth_col]
     for i, logs in enumerate(log_tracks):
         ax = axes[i]
+        
+        # Regular plotting for all tracks
         for log in logs:
             if log in df.columns:
                 ax.plot(df[log], depth, label=log)
         
-        # Set labels and formatting first
+        # Set labels and formatting
         ax.set_xlabel(track_labels[i] if track_labels and i < len(track_labels) else ", ".join(logs))
-        ax.invert_yaxis()
-        ax.grid(True, which="both", linestyle=":", linewidth=0.5)
         if len(logs) > 1:
             ax.legend(fontsize=8)
+        
+        # Set appropriate x-axis limits for specific log types
+        if any(c in logs for c in ["CALI", "BS"]):  # Caliper/Bit Size track
+            # Calculate reasonable limits excluding extreme outliers
+            combined_data = []
+            for log in logs:
+                if log in df.columns:
+                    # Filter out null values and extreme outliers
+                    valid_data = df[log][df[log] != -999.25]
+                    # Use percentiles to exclude outliers
+                    p5, p95 = valid_data.quantile([0.05, 0.95])
+                    combined_data.extend([p5, p95])
+            
+            if combined_data:
+                min_val = min(combined_data)
+                max_val = max(combined_data)
+                # Add some padding
+                padding = (max_val - min_val) * 0.1
+                ax.set_xlim(max(0, min_val - padding), max_val + padding)
+            else:
+                ax.set_xlim(6, 20)  # Default caliper range
+        elif "GR" in logs:  # Gamma Ray track
+            ax.set_xlim(0, None)  # Start from 0, let matplotlib determine the upper limit
+        elif "DEN" in logs:  # Density track
+            ax.set_xlim(1.5, 3.0)  # Typical density range for sedimentary rocks
+        elif "NEU" in logs:  # Neutron track
+            ax.set_xlim(0, 0.6)  # Neutron porosity from 0 to 60%
+        elif any(r in logs for r in ["RMIC", "RMED", "RDEP"]):  # Resistivity track
+            ax.set_xscale('log')  # Logarithmic scale for resistivity
+            ax.set_xlim(0.1, 1000)  # Typical resistivity range
+        elif any(s in logs for s in ["AC", "ACS"]):  # Sonic track
+            ax.set_xlim(40, 200)  # Typical sonic transit time range (μs/ft)
+        
+        # Common formatting for all tracks
+        ax.invert_yaxis()
+        ax.grid(True, which="both", linestyle=":", linewidth=0.5)
         
         # Add formation tops after plotting data (so xlim is set)
         print(f"Adding formation tops to track {i+1}...")
