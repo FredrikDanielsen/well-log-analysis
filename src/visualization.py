@@ -239,7 +239,18 @@ if __name__ == "__main__":
             x_pos = ax.get_xlim()[0] + 0.95 * (ax.get_xlim()[1] - ax.get_xlim()[0])
             ax.text(x_pos, td, f' {tn}', color='red', fontsize=8, va='center', ha='right', 
                    bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8, edgecolor='red'))
+    
+    # Set depth axis limits to show full geological context (0 to 3500m)
+    for ax in axes:
+        ax.set_ylim(3500, 0)  # Note: inverted (bottom, top) because y-axis is already inverted
+    
     axes[0].set_ylabel("Depth (m)")
     fig.suptitle("Well Log Panel with Formation Tops", fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
+    
+    # Save the plot as PNG in the data folder
+    output_path = os.path.join("data", "well_log1.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    print(f"Plot saved as: {output_path}")
+    
     plt.show()
